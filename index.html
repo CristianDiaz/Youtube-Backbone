@@ -1,0 +1,209 @@
+<!-- http://www.slideshare.net/easynube/introduccin-a-backbonejs-con-un-caso-prctico-easynube-15920632 -->
+
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>youtube with Backbone</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
+        <link rel="stylesheet" href="css/main.css">
+
+        <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+    </head>
+	<body>
+
+		<div id="wrap">
+
+			<div class="navbar">
+			  <div class="navbar-inner">
+			    <a class="brand" href="#">Youtube with Backbone</a>
+			    <ul class="nav">
+			      <li><a href="#"></a></li>
+			    </ul>
+			  </div>
+			</div>
+
+			<div class="container">
+				<div id="video-controls"></div>
+				<div id="video-container"></div>	
+			</div>
+
+		</div>	
+
+      	<div id="footer">
+        	<div class="container">
+          		<p class="muted credit"><a href="#">&copy; Cristian Diaz</a></p>
+        	</div>
+      	</div>
+
+
+		<script src="http://www.google.com/jsapi" type="text/javascript"></script>
+	    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+	    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.2.min.js"><\/script>')</script>
+	    <script src="js/vendor/underscore.js"></script>
+	    <script src="js/vendor/backbone.js"></script>
+	    <script src="js/vendor/bootstrap.min.js"></script>
+	    <script src="js/main.js"></script>
+
+		<script>
+			(function($){
+				google.load("swfobject", "2.1");
+
+
+				var Video = Backbone.Model.extend({
+					defaults: {	
+							id: 'JwQZQygg3Lk', // tg00YEETFzg
+							singer: 'The Black Eyed Peas',
+							song: 'The Time (Dirty Bit)',
+							duration: 0,
+							time: 0
+					}
+				});
+
+				var SingleVideo = Backbone.View.extend({
+					el: $('#video-container'),
+
+					initialize: function(){
+						this.template = _.template( $('#containervideo-template').html() );
+						this.render();
+						
+						google.setOnLoadCallback(this.loadPlayer);	
+					},
+
+					render: function(){
+						this.$el.html( this.template() );
+						return this;
+					},
+
+					loadPlayer: function(){
+		        		var params = {allowScriptAccess: "always"},
+		        			atts = {id: "ytPlayer"};
+		    			swfobject.embedSWF("http://www.youtube.com/apiplayer?" +
+		                           "version=3&enablejsapi=1&playerapiid=player1", 
+		                           "video-div", "480", "295", "9", null, null, params, atts);	// "640", "385"		
+					}
+
+				});
+
+				var Controls = Backbone.View.extend({	
+					model: new Video(),
+
+					el: $('#video-controls'),
+				
+					events: {
+						'click #play': 'playVideo',
+						'click #pause': 'pauseVideo'
+					},
+
+					initialize: function(){
+						this.template = _.template( $('#controls-template').html() );	
+						this.render();
+					},
+
+					render: function(){
+						this.$el.html( this.template( this.model.toJSON() ) );
+						return this;
+					},
+
+				    updatePlayerInfo: function(){
+				        if( ytplayer && ytplayer.getDuration ){
+				          $('.time').html( (ytplayer.getCurrentTime() / 60).toFixed(2) );
+				          $('.duration').html( (ytplayer.getDuration() / 60).toFixed(2) );
+				        }
+				    },				
+
+	      			onPlayerError: function(errorCode){
+				        alert("An error occured of type: " + errorCode);
+				    },
+
+					playVideo: function(){
+						if(ytplayer)
+							ytplayer.playVideo();
+					},
+
+					pauseVideo: function(){
+						if(ytplayer)
+							ytplayer.pauseVideo();
+					}
+
+				});
+
+
+				$(document).ready(function(){
+					var appVideo = new SingleVideo();
+				
+					onYouTubePlayerReady = function(playerId) {
+			        	ytplayer = document.getElementById("ytPlayer");
+
+			        	var controls = new Controls();
+				        setInterval(controls.updatePlayerInfo, 250);
+				        controls.updatePlayerInfo();
+				        ytplayer.addEventListener("onError", "controls.onPlayerError");		        	
+
+			        	ytplayer.cueVideoById( controls.model.get("id") ); 
+		 			}
+
+				});
+
+			})(jQuery);
+
+		</script>
+
+		<!-- Templates -->
+		<script type="text/template" id="info-template">
+			<span class="song"><%=song%> </span> | <span class="singer"> <%=singer%></span> 
+			<span class="time"><%=time%></span> | <span class="duration"><%=duration%></span> 	
+		</script>
+
+		<script type="text/template" id="controls-template">
+
+            <div class="navbar">
+            	<div class="navbar-inner">
+					<ul class="nav" id="controls">
+					  <li id="play">
+					  	<a href="#"><i class="icon-play rigth"></i></a>
+					  </li>
+					  <li id="pause">
+					  	<a href="#"><i class="icon-pause rigth"></i></a>
+				  	  </li>			      	
+					  <li>
+					    <a href="#">
+					    	<span class="song"><%=song%> </span>  
+					    </a>
+				      </li>
+					  <li>
+					    <a href="#">
+					    	 |
+					    </a>
+				      </li>					      
+					  <li>
+					    <a href="#">
+					    	<span class="singer"> <%=singer%></span> 
+					    </a>
+				      </li>				      
+					  <li>
+					    <a href="#">
+					    	<span class="time"><%=time%></span> | <span class="duration"><%=duration%></span>
+					    </a>
+				      </li>						      				      	      		      	      
+					</ul>
+				</div>
+			</div>
+
+		</script>
+
+		<script type="text/template" id="containervideo-template"> 
+		    	<div id="controls-div"></div> 
+		        <div id="video-div">Loading...</div>
+		</script>    
+
+	</body>
+</html>
